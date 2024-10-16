@@ -23,7 +23,7 @@ namespace mb::hw::gpio::intf
   ---------------------------------------------------------------------------*/
 
   static etl::array<Callback_t, NUM_BANK0_GPIOS> s_callbacks;
-  static uint32_t s_irq_mask;
+  static uint32_t                                s_irq_mask;
 
   /*---------------------------------------------------------------------------
   Private Functions
@@ -73,10 +73,14 @@ namespace mb::hw::gpio::intf
 
   bool init( const PinConfig &config )
   {
-
-
     gpio_init( config.pin );
-    return false;
+    gpio_set_dir( config.pin, config.mode == Mode_t::MODE_OUTPUT ? GPIO_OUT : GPIO_IN );
+    gpio_set_pulls( config.pin, config.pull == Pull_t::PULL_UP, config.pull == Pull_t::PULL_DOWN );
+    gpio_set_drive_strength( config.pin, static_cast<gpio_drive_strength>( config.drive ) );
+    gpio_set_slew_rate( config.pin, static_cast<gpio_slew_rate>( config.speed ) );
+    gpio_set_function( config.pin, static_cast<gpio_function>( config.alternate ) );
+
+    return true;
   }
 
 
@@ -135,7 +139,7 @@ namespace mb::hw::gpio::intf
 
   void setMode( const Port_t port, const Pin_t pin, const Mode_t mode )
   {
-    switch (mode)
+    switch( mode )
     {
       case Mode_t::MODE_INPUT:
         gpio_set_input_enabled( pin, true );
@@ -208,5 +212,4 @@ namespace mb::hw::gpio::intf
     return pin;
   }
 
-
-}  // namespace mb::hw::gpio::intf
+}    // namespace mb::hw::gpio::intf

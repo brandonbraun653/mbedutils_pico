@@ -14,9 +14,17 @@ Includes
 #include <mbedutils/assert.hpp>
 #include <mbedutils/interfaces/spi_intf.hpp>
 #include "hardware/spi.h"
+#include "pico/sync.h"
 
 namespace mb::hw::spi::intf
 {
+  /*---------------------------------------------------------------------------
+  Private Data
+  ---------------------------------------------------------------------------*/
+
+  static mutex_t s_port_0_mtx;
+  static mutex_t s_port_1_mtx;
+
   /*---------------------------------------------------------------------------
   Private Functions
   ---------------------------------------------------------------------------*/
@@ -43,6 +51,8 @@ namespace mb::hw::spi::intf
 
   void driver_setup()
   {
+    mutex_init( &s_port_0_mtx );
+    mutex_init( &s_port_1_mtx );
   }
 
 
@@ -94,6 +104,44 @@ namespace mb::hw::spi::intf
   {
     spi_inst_t *spi = get_spi_instance( port );
     return spi_write_read_blocking( spi, reinterpret_cast<const uint8_t*>( tx ), reinterpret_cast<uint8_t*>( rx ), length );
+  }
+
+
+  void lock( const Port_t port )
+  {
+    switch( port )
+    {
+      case 0:
+        mutex_enter_blocking( &s_port_0_mtx );
+        break;
+
+      case 1:
+        mutex_enter_blocking( &s_port_1_mtx );
+        break;
+
+      default:
+        mbed_assert_always();
+        break;
+    }
+  }
+
+
+  void unlock( const Port_t port )
+  {
+    switch( port )
+    {
+      case 0:
+        mutex_exit( &s_port_0_mtx );
+        break;
+
+      case 1:
+        mutex_exit( &s_port_1_mtx );
+        break;
+
+      default:
+        mbed_assert_always();
+        break;
+    }
   }
 
 }    // namespace mb::hw::spi::intf

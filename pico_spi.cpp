@@ -13,8 +13,8 @@ Includes
 -----------------------------------------------------------------------------*/
 #include <mbedutils/assert.hpp>
 #include <mbedutils/interfaces/spi_intf.hpp>
+#include <mbedutils/interfaces/mutex_intf.hpp>
 #include "hardware/spi.h"
-#include "pico/sync.h"
 
 namespace mb::hw::spi::intf
 {
@@ -22,8 +22,8 @@ namespace mb::hw::spi::intf
   Private Data
   ---------------------------------------------------------------------------*/
 
-  static mutex_t s_port_0_mtx;
-  static mutex_t s_port_1_mtx;
+  static osal::mb_recursive_mutex_t s_port_0_mtx;
+  static osal::mb_recursive_mutex_t s_port_1_mtx;
 
   /*---------------------------------------------------------------------------
   Private Functions
@@ -51,13 +51,16 @@ namespace mb::hw::spi::intf
 
   void driver_setup()
   {
-    mutex_init( &s_port_0_mtx );
-    mutex_init( &s_port_1_mtx );
+    mbed_assert( osal::buildMutexStrategy( s_port_0_mtx ) );
+    mbed_assert( osal::buildMutexStrategy( s_port_1_mtx ) );
   }
 
 
   void driver_teardown()
   {
+    osal::destroyMutexStrategy( s_port_0_mtx );
+    osal::destroyMutexStrategy( s_port_1_mtx );
+
     spi_deinit( spi0 );
     spi_deinit( spi1 );
   }
@@ -86,24 +89,24 @@ namespace mb::hw::spi::intf
   }
 
 
-  int write( const Port_t port, const void * data, const size_t length )
+  int write( const Port_t port, const void *data, const size_t length )
   {
     spi_inst_t *spi = get_spi_instance( port );
-    return spi_write_blocking( spi, reinterpret_cast<const uint8_t*>( data ), length );
+    return spi_write_blocking( spi, reinterpret_cast<const uint8_t *>( data ), length );
   }
 
 
-  int read( const Port_t port, void * data, const size_t length )
+  int read( const Port_t port, void *data, const size_t length )
   {
     spi_inst_t *spi = get_spi_instance( port );
-    spi_read_blocking( spi, 0, reinterpret_cast<uint8_t*>( data ), length );
+    return spi_read_blocking( spi, 0xFF, reinterpret_cast<uint8_t *>( data ), length );
   }
 
 
-  int transfer( const Port_t port, const void * tx, void * rx, const size_t length )
+  int transfer( const Port_t port, const void *tx, void *rx, const size_t length )
   {
     spi_inst_t *spi = get_spi_instance( port );
-    return spi_write_read_blocking( spi, reinterpret_cast<const uint8_t*>( tx ), reinterpret_cast<uint8_t*>( rx ), length );
+    return spi_write_read_blocking( spi, reinterpret_cast<const uint8_t *>( tx ), reinterpret_cast<uint8_t *>( rx ), length );
   }
 
 
@@ -112,11 +115,11 @@ namespace mb::hw::spi::intf
     switch( port )
     {
       case 0:
-        mutex_enter_blocking( &s_port_0_mtx );
+        osal::lockRecursiveMutex( s_port_0_mtx );
         break;
 
       case 1:
-        mutex_enter_blocking( &s_port_1_mtx );
+        osal::lockRecursiveMutex( s_port_1_mtx );
         break;
 
       default:
@@ -131,11 +134,11 @@ namespace mb::hw::spi::intf
     switch( port )
     {
       case 0:
-        mutex_exit( &s_port_0_mtx );
+        osal::unlockRecursiveMutex( s_port_0_mtx );
         break;
 
       case 1:
-        mutex_exit( &s_port_1_mtx );
+        osal::unlockRecursiveMutex( s_port_1_mtx );
         break;
 
       default:

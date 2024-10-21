@@ -9,6 +9,7 @@ if( PICO_SDK_PATH )
 
         # These targets are defined in the pico-sdk CMake files after importing.
         hardware_dma_headers
+        hardware_exception_headers
         hardware_gpio_headers
         hardware_spi_headers
         hardware_timer_headers

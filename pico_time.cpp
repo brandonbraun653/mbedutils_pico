@@ -23,15 +23,15 @@ namespace mb::time
   Public Functions
   ---------------------------------------------------------------------------*/
 
-  size_t millis()
+  int64_t millis()
   {
-    return to_ms_since_boot( get_absolute_time() );
+    return static_cast<int64_t>( to_ms_since_boot( get_absolute_time() ) );
   }
 
 
-  size_t micros()
+  int64_t micros()
   {
-    return to_us_since_boot( get_absolute_time() );
+    return static_cast<int64_t>( to_us_since_boot( get_absolute_time() ) );
   }
 
 
@@ -46,6 +46,6 @@ namespace mb::time
     sleep_us( val );
   }
 
-}  // namespace mb::time
+}    // namespace mb::time
 
 #endif /* !__has_include( "FreeRTOS.h" ) */
